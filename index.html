@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rate Ledger — スコア台帳</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0F1B1A;
+    --ink-soft:#172624;
+    --paper:#EDE7D6;
+    --paper-line:#c9c0a4;
+    --gold:#C9A227;
+    --silver:#9AA5A8;
+    --bronze:#B0754A;
+    --teal:#2F6F62;
+    --teal-bright:#4FA88F;
+    --text-on-dark:#EDE7D6;
+    --text-on-paper:#1A211F;
+    --danger:#B5453B;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--ink);
+    color:var(--text-on-dark);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{
+    max-width:920px;
+    margin:0 auto;
+    padding:56px 24px 80px;
+  }
+  header{
+    margin-bottom:40px;
+    border-bottom:1px solid rgba(237,231,214,0.15);
+    padding-bottom:28px;
+  }
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    color:var(--teal-bright);
+    margin:0 0 10px;
+  }
+  h1{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:clamp(32px,5vw,48px);
+    margin:0 0 10px;
+    letter-spacing:-0.01em;
+  }
+  .sub{
+    color:rgba(237,231,214,0.65);
+    font-size:15px;
+    line-height:1.6;
+    max-width:56ch;
+  }
+  .formula{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    margin-top:16px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    background:rgba(79,168,143,0.1);
+    border:1px solid rgba(79,168,143,0.35);
+    color:var(--teal-bright);
+    padding:8px 14px;
+    border-radius:6px;
+  }
+
+  /* Quick add card */
+  .add-card{
+    background:var(--ink-soft);
+    border:1px solid rgba(237,231,214,0.1);
+    border-radius:12px;
+    padding:22px 24px;
+    margin-bottom:36px;
+  }
+  .add-card h2{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:18px;
+    margin:0 0 16px;
+    color:var(--text-on-dark);
+  }
+  .add-row{
+    display:grid;
+    grid-template-columns:2fr 1fr 1fr auto;
+    gap:12px;
+  }
+  @media (max-width:640px){
+    .add-row{grid-template-columns:1fr 1fr; }
+    .add-row button{grid-column:1 / -1;}
+  }
+  .field{display:flex; flex-direction:column; gap:6px;}
+  .field label{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:rgba(237,231,214,0.55);
+  }
+  .field input{
+    background:var(--ink);
+    border:1px solid rgba(237,231,214,0.18);
+    color:var(--text-on-dark);
+    padding:10px 12px;
+    border-radius:7px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:14px;
+    outline:none;
+    transition:border-color .15s;
+  }
+  .field input:focus{border-color:var(--teal-bright);}
+  .field input::placeholder{color:rgba(237,231,214,0.3);}
+
+  button.add-btn{
+    background:var(--teal-bright);
+    color:var(--ink);
+    border:none;
+    border-radius:7px;
+    padding:0 20px;
+    font-weight:600;
+    font-size:14px;
+    cursor:pointer;
+    transition:background .15s, transform .1s;
+    font-family:'Inter',sans-serif;
+  }
+  button.add-btn:hover{background:#63c1a5;}
+  button.add-btn:active{transform:scale(0.97);}
+  .error-msg{
+    color:var(--danger);
+    font-size:12.5px;
+    margin-top:10px;
+    min-height:1em;
+  }
+
+  /* Ledger table */
+  .ledger{
+    background:var(--paper);
+    color:var(--text-on-paper);
+    border-radius:12px;
+    overflow:hidden;
+    box-shadow:0 20px 50px rgba(0,0,0,0.35);
+  }
+  .ledger-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:18px 22px 0;
+  }
+  .ledger-head h2{
+    font-family:'Fraunces',serif;
+    font-size:20px;
+    font-weight:600;
+    margin:0;
+  }
+  .ledger-head .count{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:rgba(26,33,31,0.55);
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:14px;
+  }
+  thead th{
+    text-align:left;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.07em;
+    color:rgba(26,33,31,0.55);
+    padding:10px 22px;
+    border-bottom:1px dashed var(--paper-line);
+    user-select:none;
+  }
+  th.sortable{cursor:pointer;}
+  th.sortable:hover{color:var(--teal);}
+  th.sortable .arrow{margin-left:4px; opacity:0.5;}
+  tbody td{
+    padding:14px 22px;
+    border-bottom:1px dashed var(--paper-line);
+    font-size:14.5px;
+    vertical-align:middle;
+  }
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:rgba(47,111,98,0.06);}
+
+  .rank-badge{
+    width:30px; height:30px;
+    border-radius:50%;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'JetBrains Mono',monospace;
+    font-weight:600;
+    font-size:13px;
+    background:rgba(26,33,31,0.08);
+    color:var(--text-on-paper);
+  }
+
+  tr.top15{background:rgba(201,162,39,0.10);}
+  tr.top15:hover{background:rgba(201,162,39,0.16);}
+  tr.top15 .rank-badge{background:var(--gold); color:#2A2100;}
+
+  td.name{font-weight:600;}
+  td.num, td.score, td.rate{
+    font-family:'JetBrains Mono',monospace;
+    font-variant-numeric:tabular-nums;
+  }
+  td.rate{color:var(--teal); font-weight:600;}
+
+  td input.edit-input{
+    width:100%;
+    background:#fff;
+    border:1px solid var(--teal);
+    border-radius:5px;
+    padding:6px 8px;
+    font-family:inherit;
+    font-size:inherit;
+    color:var(--text-on-paper);
+    outline:none;
+  }
+  td.actions{display:flex; gap:6px; align-items:center; white-space:nowrap;}
+  .edit-btn, .save-btn, .cancel-btn{
+    background:none;
+    border:none;
+    cursor:pointer;
+    font-size:15px;
+    padding:4px 6px;
+    border-radius:5px;
+    transition:background .15s;
+  }
+  .edit-btn{color:rgba(26,33,31,0.45);}
+  .edit-btn:hover{color:var(--teal); background:rgba(47,111,98,0.1);}
+  .save-btn{color:var(--teal);}
+  .save-btn:hover{background:rgba(47,111,98,0.12);}
+  .cancel-btn{color:rgba(26,33,31,0.4);}
+  .cancel-btn:hover{background:rgba(26,33,31,0.08);}
+
+  .avg-badge{
+    display:inline-flex;
+    align-items:baseline;
+    gap:6px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+    color:rgba(26,33,31,0.6);
+  }
+  .avg-badge strong{
+    font-size:15px;
+    color:var(--teal);
+    font-weight:700;
+  }
+
+  .del-btn{
+    background:none;
+    border:none;
+    color:rgba(181,69,59,0.55);
+    cursor:pointer;
+    font-size:16px;
+    padding:4px 6px;
+    border-radius:5px;
+    transition:color .15s, background .15s;
+  }
+  .del-btn:hover{color:var(--danger); background:rgba(181,69,59,0.1);}
+
+  .empty{
+    padding:50px 22px 60px;
+    text-align:center;
+    color:rgba(26,33,31,0.5);
+    font-size:14px;
+  }
+
+  .ledger-foot{
+    display:flex;
+    justify-content:flex-end;
+    padding:14px 22px 18px;
+  }
+  .clear-all{
+    background:none;
+    border:1px solid rgba(181,69,59,0.4);
+    color:var(--danger);
+    font-size:12.5px;
+    padding:7px 14px;
+    border-radius:6px;
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+  }
+  .clear-all:hover{background:rgba(181,69,59,0.08);}
+
+  footer{
+    margin-top:32px;
+    text-align:center;
+    font-size:12px;
+    color:rgba(237,231,214,0.35);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Local Storage · No Server</p>
+    <h1>Rate Ledger</h1>
+    <p class="sub">名前・番号・スコアを記録すると、レートを自動計算してランキング表示します。データはこの端末のローカルストレージに保存され、サーバーには送信されません。</p>
+    <div class="formula">rate = myfunk(score) × 2 <span style="opacity:.5">/ 現在 myfunk(score) = score としています</span></div>
+  </header>
+
+  <section class="add-card">
+    <h2>新しいレコードを追加</h2>
+    <div class="add-row">
+      <div class="field">
+        <label for="in-name">Name</label>
+        <input id="in-name" type="text" placeholder="例: Taro">
+      </div>
+      <div class="field">
+        <label for="in-num">Num</label>
+        <input id="in-num" type="number" placeholder="例: 101">
+      </div>
+      <div class="field">
+        <label for="in-score">Score</label>
+        <input id="in-score" type="number" placeholder="例: 42" step="any">
+      </div>
+      <button class="add-btn" id="add-btn">追加</button>
+    </div>
+    <div class="error-msg" id="error-msg"></div>
+  </section>
+
+  <section class="ledger">
+    <div class="ledger-head">
+      <h2>ランキング</h2>
+      <span class="count" id="count-label">0 件</span>
+    </div>
+    <div class="ledger-head" style="padding-top:6px;">
+      <span class="avg-badge" id="avg-badge" style="display:none;"></span>
+      <span></span>
+    </div>
+    <table id="table" style="display:none;">
+      <thead>
+        <tr>
+          <th style="width:50px;">#</th>
+          <th>Name</th>
+          <th class="sortable" data-key="num">Num <span class="arrow">↕</span></th>
+          <th class="sortable" data-key="score">Score <span class="arrow">↕</span></th>
+          <th class="sortable" data-key="rate">Rate <span class="arrow">▼</span></th>
+          <th style="width:76px;"></th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="empty" id="empty-state">まだレコードがありません。上のフォームから追加してください。</div>
+    <div class="ledger-foot" id="ledger-foot" style="display:none;">
+      <button class="clear-all" id="clear-all">すべて削除</button>
+    </div>
+  </section>
+
+  <footer>データはブラウザの localStorage に保存されます（key: rate-ledger-records）</footer>
+</div>
+
+<script>
+(function(){
+  const STORAGE_KEY = 'rate-ledger-records';
+
+  // ---- 計算ロジック ----
+  // myfunk(score): 現状は恒等関数（score をそのまま返す）。
+  // 必要に応じてここだけ書き換えれば、rate の計算式全体が変わります。
+  function myfunk(score){
+    return score;
+  }
+  function double(x){
+    return x * 2;
+  }
+  function calcRate(score){
+    return double(myfunk(score));
+  }
+
+  // ---- 状態 ----
+  let records = [];
+  let sortKey = 'rate';
+  let sortDir = 'desc'; // 'asc' | 'desc'
+  let editingId = null; // 現在編集中のレコードID
+
+  function load(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      records = raw ? JSON.parse(raw) : [];
+    }catch(e){
+      records = [];
+    }
+  }
+  function save(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+  }
+
+  function addRecord(name, num, score){
+    const rate = calcRate(score);
+    records.push({
+      id: Date.now() + '-' + Math.random().toString(36).slice(2,7),
+      name, num, score, rate
+    });
+    save();
+    render();
+  }
+
+  function deleteRecord(id){
+    records = records.filter(r => r.id !== id);
+    save();
+    render();
+  }
+
+  function updateRecord(id, name, num, score){
+    const rec = records.find(r => r.id === id);
+    if(!rec) return;
+    rec.name = name;
+    rec.num = num;
+    rec.score = score;
+    rec.rate = calcRate(score);
+    save();
+    editingId = null;
+    render();
+  }
+
+  function sortedRecords(){
+    const copy = [...records];
+    copy.sort((a,b) => {
+      const av = a[sortKey], bv = b[sortKey];
+      return sortDir === 'asc' ? av - bv : bv - av;
+    });
+    return copy;
+  }
+
+  function render(){
+    const tbody = document.getElementById('tbody');
+    const table = document.getElementById('table');
+    const empty = document.getElementById('empty-state');
+    const foot = document.getElementById('ledger-foot');
+    const countLabel = document.getElementById('count-label');
+
+    countLabel.textContent = records.length + ' 件';
+
+    if(records.length === 0){
+      table.style.display = 'none';
+      foot.style.display = 'none';
+      empty.style.display = 'block';
+      return;
+    }
+    table.style.display = 'table';
+    foot.style.display = 'flex';
+    empty.style.display = 'none';
+
+    const sorted = sortedRecords();
+
+    // 上位15件の rate 平均を計算して表示
+    const top15 = sorted.slice(0, 15);
+    const avgBadge = document.getElementById('avg-badge');
+    if(top15.length > 0){
+      const avg = top15.reduce((sum, r) => sum + r.rate, 0) / top15.length;
+      avgBadge.style.display = 'inline-flex';
+      avgBadge.innerHTML = `上位${top15.length}件の Rate 平均 <strong>${formatNum(avg)}</strong>`;
+    }else{
+      avgBadge.style.display = 'none';
+    }
+
+    tbody.innerHTML = sorted.map((r, i) => {
+      const rank = i + 1;
+      const isTop15 = rank <= 15;
+      const rowClass = isTop15 ? 'top15' : '';
+
+      if(r.id === editingId){
+        return `
+        <tr class="${rowClass}">
+          <td><span class="rank-badge">${rank}</span></td>
+          <td><input class="edit-input" type="text" id="edit-name" value="${escapeAttr(r.name)}"></td>
+          <td><input class="edit-input" type="number" id="edit-num" value="${r.num}"></td>
+          <td><input class="edit-input" type="number" step="any" id="edit-score" value="${r.score}"></td>
+          <td class="rate">—</td>
+          <td class="actions">
+            <button class="save-btn" data-id="${r.id}" title="保存">✓</button>
+            <button class="cancel-btn" title="キャンセル">✕</button>
+          </td>
+        </tr>`;
+      }
+
+      return `
+        <tr class="${rowClass}">
+          <td><span class="rank-badge">${rank}</span></td>
+          <td class="name">${escapeHtml(r.name)}</td>
+          <td class="num">${r.num}</td>
+          <td class="score">${r.score}</td>
+          <td class="rate">${formatNum(r.rate)}</td>
+          <td class="actions">
+            <button class="edit-btn" data-id="${r.id}" title="編集">✎</button>
+            <button class="del-btn" data-id="${r.id}" title="削除">✕</button>
+          </td>
+        </tr>`;
+    }).join('');
+
+    // イベントを再アタッチ
+    tbody.querySelectorAll('.del-btn').forEach(btn => {
+      btn.addEventListener('click', () => deleteRecord(btn.dataset.id));
+    });
+    tbody.querySelectorAll('.edit-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        editingId = btn.dataset.id;
+        render();
+      });
+    });
+    tbody.querySelectorAll('.save-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const name = document.getElementById('edit-name').value.trim();
+        const num = parseFloat(document.getElementById('edit-num').value);
+        const score = parseFloat(document.getElementById('edit-score').value);
+        if(!name || isNaN(num) || isNaN(score)){
+          alert('Name / Num / Score を正しく入力してください。');
+          return;
+        }
+        updateRecord(btn.dataset.id, name, num, score);
+      });
+    });
+    tbody.querySelectorAll('.cancel-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        editingId = null;
+        render();
+      });
+    });
+
+    // 並び替え矢印の表示更新
+    document.querySelectorAll('th.sortable').forEach(th => {
+      const key = th.dataset.key;
+      const arrow = th.querySelector('.arrow');
+      if(key === sortKey){
+        arrow.textContent = sortDir === 'asc' ? '▲' : '▼';
+        arrow.style.opacity = '1';
+      }else{
+        arrow.textContent = '↕';
+        arrow.style.opacity = '0.5';
+      }
+    });
+  }
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, s => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[s]));
+  }
+
+  function escapeAttr(str){
+    return escapeHtml(str);
+  }
+
+  function formatNum(n){
+    // 小数は最大2桁までに丸めて表示（整数はそのまま）
+    return Number.isInteger(n) ? String(n) : (Math.round(n * 100) / 100).toString();
+  }
+
+  // ---- イベント ----
+  document.getElementById('add-btn').addEventListener('click', () => {
+    const nameEl = document.getElementById('in-name');
+    const numEl = document.getElementById('in-num');
+    const scoreEl = document.getElementById('in-score');
+    const errorEl = document.getElementById('error-msg');
+
+    const name = nameEl.value.trim();
+    const num = parseFloat(numEl.value);
+    const score = parseFloat(scoreEl.value);
+
+    if(!name){
+      errorEl.textContent = 'Name を入力してください。';
+      return;
+    }
+    if(isNaN(num) || isNaN(score)){
+      errorEl.textContent = 'Num と Score には数値を入力してください。';
+      return;
+    }
+    errorEl.textContent = '';
+    addRecord(name, num, score);
+
+    nameEl.value = '';
+    numEl.value = '';
+    scoreEl.value = '';
+    nameEl.focus();
+  });
+
+  // Enterキーでも追加できるように
+  ['in-name','in-num','in-score'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => {
+      if(e.key === 'Enter') document.getElementById('add-btn').click();
+    });
+  });
+
+  document.getElementById('clear-all').addEventListener('click', () => {
+    if(confirm('すべてのレコードを削除しますか？この操作は取り消せません。')){
+      records = [];
+      save();
+      render();
+    }
+  });
+
+  document.querySelectorAll('th.sortable').forEach(th => {
+    th.addEventListener('click', () => {
+      const key = th.dataset.key;
+      if(sortKey === key){
+        sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+      }else{
+        sortKey = key;
+        sortDir = 'desc';
+      }
+      render();
+    });
+  });
+
+  // ---- 初期化 ----
+  load();
+  render();
+})();
+</script>
+</body>
+</html>
