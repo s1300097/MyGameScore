@@ -310,7 +310,6 @@
     <p class="eyebrow">Local Storage · No Server</p>
     <h1>Rate Ledger</h1>
     <p class="sub">名前・番号・スコアを記録すると、レートを自動計算してランキング表示します。データはこの端末のローカルストレージに保存され、サーバーには送信されません。</p>
-    <div class="formula">rate = myfunk(score) × 2 <span style="opacity:.5">/ 現在 myfunk(score) = score としています</span></div>
   </header>
 
   <section class="add-card">
@@ -318,15 +317,15 @@
     <div class="add-row">
       <div class="field">
         <label for="in-name">Name</label>
-        <input id="in-name" type="text" placeholder="例: Taro">
+        <input id="in-name" type="text" placeholder="例: 神鳴">
       </div>
       <div class="field">
         <label for="in-num">Num</label>
-        <input id="in-num" type="number" placeholder="例: 101">
+        <input id="in-num" type="number" placeholder="例: 14.5">
       </div>
       <div class="field">
         <label for="in-score">Score</label>
-        <input id="in-score" type="number" placeholder="例: 42" step="any">
+        <input id="in-score" type="number" placeholder="例: 1010000" step="any">
       </div>
       <button class="add-btn" id="add-btn">追加</button>
     </div>
@@ -369,16 +368,26 @@
   const STORAGE_KEY = 'rate-ledger-records';
 
   // ---- 計算ロジック ----
-  // myfunk(score): 現状は恒等関数（score をそのまま返す）。
-  // 必要に応じてここだけ書き換えれば、rate の計算式全体が変わります。
-  function myfunk(score){
-    return score;
-  }
-  function double(x){
-    return x * 2;
-  }
   function calcRate(score){
-    return double(myfunk(score));
+    const s = 975000;
+    const ss = 1000000;
+    const ss_plus = 1005000;
+    const s3 = 1007500;
+    const s3_plus = 1009000;
+    if (score < s || 1010000 < score ){
+      return -1;
+    }
+    if (s3_plus <= score){
+      return 2.15
+    }else if (score >= s3){
+      return 2 + 0.01 * Math.floor((score - s3) / 100);
+    }else if (score >= ss_plus){
+      return 1.5 + 0.01 * Math.floor((score - ss_plus) / 50);
+    }else if (score > ss){
+      return 1 + 0.01 * Math.floor((score - ss) / 100);
+    }else {
+      return 0.01 + Math.floor((score - s) / 250);
+    } 
   }
 
   // ---- 状態 ----
@@ -400,7 +409,7 @@
   }
 
   function addRecord(name, num, score){
-    const rate = calcRate(score);
+    const rate = num + calcRate(score);
     records.push({
       id: Date.now() + '-' + Math.random().toString(36).slice(2,7),
       name, num, score, rate
@@ -421,7 +430,7 @@
     rec.name = name;
     rec.num = num;
     rec.score = score;
-    rec.rate = calcRate(score);
+    rec.rate = num + calcRate(score);
     save();
     editingId = null;
     render();
@@ -556,8 +565,7 @@
   }
 
   function formatNum(n){
-    // 小数は最大2桁までに丸めて表示（整数はそのまま）
-    return Number.isInteger(n) ? String(n) : (Math.round(n * 100) / 100).toString();
+    return n.toFixed(2);
   }
 
   // ---- イベント ----
