@@ -35,6 +35,9 @@
     margin:0 auto;
     padding:56px 24px 80px;
   }
+  @media (max-width:640px){
+    .wrap{padding:36px 16px 56px;}
+  }
   header{
     margin-bottom:40px;
     border-bottom:1px solid rgba(237,231,214,0.15);
@@ -51,7 +54,7 @@
   h1{
     font-family:'Fraunces',serif;
     font-weight:600;
-    font-size:clamp(32px,5vw,48px);
+    font-size:clamp(28px,8vw,48px);
     margin:0 0 10px;
     letter-spacing:-0.01em;
   }
@@ -60,6 +63,9 @@
     font-size:15px;
     line-height:1.6;
     max-width:56ch;
+  }
+  @media (max-width:480px){
+    .sub{font-size:13.5px;}
   }
   .formula{
     display:inline-flex;
@@ -83,6 +89,9 @@
     padding:22px 24px;
     margin-bottom:36px;
   }
+  @media (max-width:480px){
+    .add-card{padding:18px 16px; margin-bottom:24px;}
+  }
   .add-card h2{
     font-family:'Fraunces',serif;
     font-weight:600;
@@ -97,7 +106,11 @@
   }
   @media (max-width:640px){
     .add-row{grid-template-columns:1fr 1fr; }
-    .add-row button{grid-column:1 / -1;}
+    .add-row button{grid-column:1 / -1; margin-top:4px;}
+  }
+  @media (max-width:420px){
+    .add-row{grid-template-columns:1fr;}
+    .add-row button{grid-column:1;}
   }
   .field{display:flex; flex-direction:column; gap:6px;}
   .field label{
@@ -125,7 +138,7 @@
     color:var(--ink);
     border:none;
     border-radius:7px;
-    padding:0 20px;
+    padding:12px 20px;
     font-weight:600;
     font-size:14px;
     cursor:pointer;
@@ -154,6 +167,8 @@
     justify-content:space-between;
     align-items:center;
     padding:18px 22px 0;
+    gap:12px;
+    flex-wrap:wrap;
   }
   .ledger-head h2{
     font-family:'Fraunces',serif;
@@ -166,10 +181,34 @@
     font-size:12px;
     color:rgba(26,33,31,0.55);
   }
+  @media (max-width:480px){
+    .ledger-head{padding:16px 16px 0;}
+  }
+  .scroll-hint{
+    display:none;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:rgba(26,33,31,0.45);
+    padding:8px 16px 0;
+  }
+  @media (max-width:640px){
+    .scroll-hint{display:block;}
+  }
+  /* 横スクロール可能なテーブルラッパー：ランキングは横リスト表記のまま維持する */
+  .table-scroll{
+    width:100%;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    margin-top:14px;
+  }
   table{
     width:100%;
+    min-width:560px;
     border-collapse:collapse;
-    margin-top:14px;
+    margin-top:0;
+  }
+  @media (max-width:480px){
+    table{min-width:520px;}
   }
   thead th{
     text-align:left;
@@ -190,6 +229,11 @@
     border-bottom:1px dashed var(--paper-line);
     font-size:14.5px;
     vertical-align:middle;
+    white-space:nowrap;
+  }
+  @media (max-width:480px){
+    thead th{padding:10px 14px;}
+    tbody td{padding:12px 14px; font-size:13.5px;}
   }
   tbody tr:last-child td{border-bottom:none;}
   tbody tr:hover{background:rgba(47,111,98,0.06);}
@@ -284,6 +328,10 @@
     justify-content:flex-end;
     padding:14px 22px 18px;
   }
+  @media (max-width:480px){
+    .empty{padding:36px 16px 44px; font-size:13px;}
+    .ledger-foot{padding:12px 16px 16px;}
+  }
   .clear-all{
     background:none;
     border:1px solid rgba(181,69,59,0.4);
@@ -341,26 +389,29 @@
       <span class="avg-badge" id="avg-badge" style="display:none;"></span>
       <span></span>
     </div>
-    <table id="table" style="display:none;">
-      <thead>
-        <tr>
-          <th style="width:50px;">#</th>
-          <th>Name</th>
-          <th class="sortable" data-key="num">Num <span class="arrow">↕</span></th>
-          <th class="sortable" data-key="score">Score <span class="arrow">↕</span></th>
-          <th class="sortable" data-key="rate">Rate <span class="arrow">▼</span></th>
-          <th style="width:76px;"></th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
+    <p class="scroll-hint" id="scroll-hint" style="display:none;">← 横にスクロールできます →</p>
+    <div class="table-scroll">
+      <table id="table" style="display:none;">
+        <thead>
+          <tr>
+            <th style="width:50px;">#</th>
+            <th>Name</th>
+            <th class="sortable" data-key="num">Num <span class="arrow">↕</span></th>
+            <th class="sortable" data-key="score">Score <span class="arrow">↕</span></th>
+            <th class="sortable" data-key="rate">Rate <span class="arrow">▼</span></th>
+            <th style="width:76px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
     <div class="empty" id="empty-state">まだレコードがありません。上のフォームから追加してください。</div>
     <div class="ledger-foot" id="ledger-foot" style="display:none;">
       <button class="clear-all" id="clear-all">すべて削除</button>
     </div>
   </section>
 
-  <footer>データはブラウザの localStorage に保存されます（key: rate-ledger-records）</footer>
+  <footer>データはこのブラウザの localStorage に保存されます（key: rate-ledger-records）。別のブラウザ・端末とは共有されません。</footer>
 </div>
 
 <script>
@@ -401,11 +452,18 @@
       const raw = localStorage.getItem(STORAGE_KEY);
       records = raw ? JSON.parse(raw) : [];
     }catch(e){
+      console.error('読み込みに失敗しました', e);
       records = [];
     }
   }
   function save(){
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+    }catch(e){
+      // 容量超過やプライベートブラウジング等でlocalStorageが使えない場合
+      console.error('保存に失敗しました', e);
+      alert('データの保存に失敗しました（ブラウザのストレージが利用できない可能性があります）。');
+    }
   }
 
   function addRecord(name, num, score){
@@ -451,6 +509,7 @@
     const empty = document.getElementById('empty-state');
     const foot = document.getElementById('ledger-foot');
     const countLabel = document.getElementById('count-label');
+    const scrollHint = document.getElementById('scroll-hint');
 
     countLabel.textContent = records.length + ' 件';
 
@@ -458,11 +517,13 @@
       table.style.display = 'none';
       foot.style.display = 'none';
       empty.style.display = 'block';
+      scrollHint.style.display = 'none';
       return;
     }
     table.style.display = 'table';
     foot.style.display = 'flex';
     empty.style.display = 'none';
+    scrollHint.style.display = '';
 
     const sorted = sortedRecords();
 
