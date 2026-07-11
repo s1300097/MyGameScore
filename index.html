@@ -62,7 +62,6 @@
     color:rgba(237,231,214,0.65);
     font-size:15px;
     line-height:1.6;
-    max-width:56ch;
   }
   @media (max-width:480px){
     .sub{font-size:13.5px;}
@@ -206,12 +205,12 @@
   }
   table{
     width:100%;
-    min-width:620px;
+    min-width:700px;
     border-collapse:collapse;
     margin-top:0;
   }
   @media (max-width:480px){
-    table{min-width:580px;}
+    table{min-width:660px;}
   }
   thead th{
     text-align:left;
@@ -258,7 +257,13 @@
   tr.top15:hover{background:rgba(201,162,39,0.16);}
   tr.top15 .rank-badge{background:var(--gold); color:#2A2100;}
 
-  td.name{font-weight:600;}
+  td.name{
+    font-weight:600;
+    max-width:200px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
   td.num, td.score, td.rate{
     font-family:'JetBrains Mono',monospace;
     font-variant-numeric:tabular-nums;
@@ -283,10 +288,13 @@
   td input.edit-input,
   td select.edit-input{
     width:100%;
+    min-width:64px;
+    box-sizing:border-box;
     background:#fff;
     border:1px solid var(--teal);
     border-radius:5px;
-    padding:6px 8px;
+    padding:8px 10px;
+    min-height:38px;
     font-family:inherit;
     font-size:inherit;
     color:var(--text-on-paper);
@@ -377,7 +385,7 @@
   <header>
     <p class="eyebrow">Local Storage · No Server</p>
     <h1>Rate Ledger</h1>
-    <p class="sub">名前・番号・スコアを記録すると、レートを自動計算してランキング表示します。データはこの端末のローカルストレージに保存され、サーバーには送信されません。</p>
+    <p class="sub">名前・難易度・定数・スコアを記録すると、レートを自動計算してランキング表示します。データはこの端末のローカルストレージに保存され、サーバーには送信されません。</p>
   </header>
 
   <section class="add-card">
@@ -425,9 +433,9 @@
             <th style="width:50px;">#</th>
             <th>Name</th>
             <th style="width:70px;">Diff</th>
-            <th class="sortable" data-key="num">Num <span class="arrow">↕</span></th>
-            <th class="sortable" data-key="score">Score <span class="arrow">↕</span></th>
-            <th class="sortable" data-key="rate">Rate <span class="arrow">▼</span></th>
+            <th class="sortable" data-key="num" style="width:100px;">Num <span class="arrow">↕</span></th>
+            <th class="sortable" data-key="score" style="width:120px;">Score <span class="arrow">↕</span></th>
+            <th class="sortable" data-key="rate" style="width:100px;">Rate <span class="arrow">▼</span></th>
             <th style="width:76px;"></th>
           </tr>
         </thead>
@@ -599,7 +607,7 @@
       return `
         <tr class="${rowClass}">
           <td><span class="rank-badge">${rank}</span></td>
-          <td class="name">${escapeHtml(r.name)}</td>
+          <td class="name" title="${escapeAttr(r.name)}">${escapeHtml(r.name)}</td>
           <td><span class="diff-badge diff-${diff.toLowerCase()}">${diff}</span></td>
           <td class="num">${r.num}</td>
           <td class="score">${r.score}</td>
