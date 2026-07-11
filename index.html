@@ -253,9 +253,9 @@
     color:var(--text-on-paper);
   }
 
-  tr.top15{background:rgba(201,162,39,0.10);}
-  tr.top15:hover{background:rgba(201,162,39,0.16);}
-  tr.top15 .rank-badge{background:var(--gold); color:#2A2100;}
+  tr.top20{background:rgba(201,162,39,0.10);}
+  tr.top20:hover{background:rgba(201,162,39,0.16);}
+  tr.top20 .rank-badge{background:var(--gold); color:#2A2100;}
 
   td.name{
     font-weight:600;
@@ -566,20 +566,20 @@
     const sorted = sortedRecords();
 
     // 上位15件の rate 平均を計算して表示
-    const top15 = sorted.slice(0, 15);
+    const top20 = sorted.slice(0, 20);
     const avgBadge = document.getElementById('avg-badge');
-    if(top15.length > 0){
-      const avg = top15.reduce((sum, r) => sum + r.rate, 0) / top15.length;
+    if(top20.length > 0){
+      const avg = top20.reduce((sum, r) => sum + r.rate, 0) / top20.length;
       avgBadge.style.display = 'inline-flex';
-      avgBadge.innerHTML = `上位${top15.length}件の Rate 平均 <strong>${formatNum(avg)}</strong>`;
+      avgBadge.innerHTML = `上位${top20.length}件の Rate 平均 <strong>${formatNum(avg)}</strong>`;
     }else{
       avgBadge.style.display = 'none';
     }
 
     tbody.innerHTML = sorted.map((r, i) => {
       const rank = i + 1;
-      const isTop15 = rank <= 15;
-      const rowClass = isTop15 ? 'top15' : '';
+      const isTop20 = rank <= 20;
+      const rowClass = isTop20 ? 'top20' : '';
       const diff = r.diff || 'MAS';
 
       if(r.id === editingId){
