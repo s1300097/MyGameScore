@@ -386,7 +386,7 @@
     }else if (score > ss){
       return 1 + 0.01 * Math.floor((score - ss) / 100);
     }else {
-      return 0.01 + Math.floor((score - s) / 250);
+      return 0.01 * Math.floor((score - s) / 250);
     } 
   }
 
