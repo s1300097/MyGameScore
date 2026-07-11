@@ -101,7 +101,7 @@
   }
   .add-row{
     display:grid;
-    grid-template-columns:2fr 1fr 1fr auto;
+    grid-template-columns:1.8fr 0.9fr 1fr 1fr auto;
     gap:12px;
   }
   @media (max-width:640px){
@@ -119,7 +119,8 @@
     letter-spacing:0.08em;
     color:rgba(237,231,214,0.55);
   }
-  .field input{
+  .field input,
+  .field select{
     background:var(--ink);
     border:1px solid rgba(237,231,214,0.18);
     color:var(--text-on-dark);
@@ -130,7 +131,9 @@
     outline:none;
     transition:border-color .15s;
   }
-  .field input:focus{border-color:var(--teal-bright);}
+  .field select{cursor:pointer;}
+  .field input:focus,
+  .field select:focus{border-color:var(--teal-bright);}
   .field input::placeholder{color:rgba(237,231,214,0.3);}
 
   button.add-btn{
@@ -203,12 +206,12 @@
   }
   table{
     width:100%;
-    min-width:560px;
+    min-width:620px;
     border-collapse:collapse;
     margin-top:0;
   }
   @media (max-width:480px){
-    table{min-width:520px;}
+    table{min-width:580px;}
   }
   thead th{
     text-align:left;
@@ -262,7 +265,23 @@
   }
   td.rate{color:var(--teal); font-weight:600;}
 
-  td input.edit-input{
+  .diff-badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:3px 10px;
+    border-radius:20px;
+    font-family:'JetBrains Mono',monospace;
+    font-weight:600;
+    font-size:11px;
+    letter-spacing:0.05em;
+  }
+  .diff-badge.diff-exp{background:rgba(255,17,17,0.12); color:#f11;}
+  .diff-badge.diff-mas{background:rgba(170,0,170,0.12); color:#a0a;}
+  .diff-badge.diff-ult{background:rgba(134,35,51,0.12); color:#862333;}
+
+  td input.edit-input,
+  td select.edit-input{
     width:100%;
     background:#fff;
     border:1px solid var(--teal);
@@ -273,6 +292,7 @@
     color:var(--text-on-paper);
     outline:none;
   }
+  td select.edit-input{cursor:pointer;}
   td.actions{display:flex; gap:6px; align-items:center; white-space:nowrap;}
   .edit-btn, .save-btn, .cancel-btn{
     background:none;
@@ -368,6 +388,14 @@
         <input id="in-name" type="text" placeholder="例: 神鳴">
       </div>
       <div class="field">
+        <label for="in-diff">Diff</label>
+        <select id="in-diff">
+          <option value="EXP">EXP</option>
+          <option value="MAS" selected>MAS</option>
+          <option value="ULT">ULT</option>
+        </select>
+      </div>
+      <div class="field">
         <label for="in-num">Num</label>
         <input id="in-num" type="number" placeholder="例: 14.5">
       </div>
@@ -396,6 +424,7 @@
           <tr>
             <th style="width:50px;">#</th>
             <th>Name</th>
+            <th style="width:70px;">Diff</th>
             <th class="sortable" data-key="num">Num <span class="arrow">↕</span></th>
             <th class="sortable" data-key="score">Score <span class="arrow">↕</span></th>
             <th class="sortable" data-key="rate">Rate <span class="arrow">▼</span></th>
@@ -466,11 +495,11 @@
     }
   }
 
-  function addRecord(name, num, score){
+  function addRecord(name, diff, num, score){
     const rate = num + calcRate(score);
     records.push({
       id: Date.now() + '-' + Math.random().toString(36).slice(2,7),
-      name, num, score, rate
+      name, diff, num, score, rate
     });
     save();
     render();
@@ -482,10 +511,11 @@
     render();
   }
 
-  function updateRecord(id, name, num, score){
+  function updateRecord(id, name, diff, num, score){
     const rec = records.find(r => r.id === id);
     if(!rec) return;
     rec.name = name;
+    rec.diff = diff;
     rec.num = num;
     rec.score = score;
     rec.rate = num + calcRate(score);
@@ -542,12 +572,20 @@
       const rank = i + 1;
       const isTop15 = rank <= 15;
       const rowClass = isTop15 ? 'top15' : '';
+      const diff = r.diff || 'MAS';
 
       if(r.id === editingId){
         return `
         <tr class="${rowClass}">
           <td><span class="rank-badge">${rank}</span></td>
           <td><input class="edit-input" type="text" id="edit-name" value="${escapeAttr(r.name)}"></td>
+          <td>
+            <select class="edit-input" id="edit-diff">
+              <option value="EXP" ${diff==='EXP'?'selected':''}>EXP</option>
+              <option value="MAS" ${diff==='MAS'?'selected':''}>MAS</option>
+              <option value="ULT" ${diff==='ULT'?'selected':''}>ULT</option>
+            </select>
+          </td>
           <td><input class="edit-input" type="number" id="edit-num" value="${r.num}"></td>
           <td><input class="edit-input" type="number" step="any" id="edit-score" value="${r.score}"></td>
           <td class="rate">—</td>
@@ -562,6 +600,7 @@
         <tr class="${rowClass}">
           <td><span class="rank-badge">${rank}</span></td>
           <td class="name">${escapeHtml(r.name)}</td>
+          <td><span class="diff-badge diff-${diff.toLowerCase()}">${diff}</span></td>
           <td class="num">${r.num}</td>
           <td class="score">${r.score}</td>
           <td class="rate">${formatNum(r.rate)}</td>
@@ -585,13 +624,14 @@
     tbody.querySelectorAll('.save-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const name = document.getElementById('edit-name').value.trim();
+        const diff = document.getElementById('edit-diff').value;
         const num = parseFloat(document.getElementById('edit-num').value);
         const score = parseFloat(document.getElementById('edit-score').value);
         if(!name || isNaN(num) || isNaN(score)){
           alert('Name / Num / Score を正しく入力してください。');
           return;
         }
-        updateRecord(btn.dataset.id, name, num, score);
+        updateRecord(btn.dataset.id, name, diff, num, score);
       });
     });
     tbody.querySelectorAll('.cancel-btn').forEach(btn => {
@@ -632,11 +672,13 @@
   // ---- イベント ----
   document.getElementById('add-btn').addEventListener('click', () => {
     const nameEl = document.getElementById('in-name');
+    const diffEl = document.getElementById('in-diff');
     const numEl = document.getElementById('in-num');
     const scoreEl = document.getElementById('in-score');
     const errorEl = document.getElementById('error-msg');
 
     const name = nameEl.value.trim();
+    const diff = diffEl.value;
     const num = parseFloat(numEl.value);
     const score = parseFloat(scoreEl.value);
 
@@ -649,16 +691,17 @@
       return;
     }
     errorEl.textContent = '';
-    addRecord(name, num, score);
+    addRecord(name, diff, num, score);
 
     nameEl.value = '';
+    diffEl.value = 'MAS';
     numEl.value = '';
     scoreEl.value = '';
     nameEl.focus();
   });
 
   // Enterキーでも追加できるように
-  ['in-name','in-num','in-score'].forEach(id => {
+  ['in-name','in-diff','in-num','in-score'].forEach(id => {
     document.getElementById(id).addEventListener('keydown', e => {
       if(e.key === 'Enter') document.getElementById('add-btn').click();
     });
